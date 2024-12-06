@@ -62,10 +62,6 @@ class Part2 < Part1
     super
   end
 
-  def find_middle_number(update, _result)
-    @middle_numbers << update[(update.size/2).floor]
-  end
-
   def solve_update(update)
     hit = []
     re_process = false
@@ -79,6 +75,7 @@ class Part2 < Part1
     end
 
     solve_update(update) if re_process
+    true
   end
 end
 
