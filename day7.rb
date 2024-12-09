@@ -38,7 +38,7 @@ class Part1
           equation << operator << calibration.operands[index + 1]
         end
 
-        if (result = evaluate_left_to_right(equation)) == calibration.result
+        if evaluate_left_to_right(equation) == calibration.result
           calibration.solution_found = true
           break
         end
