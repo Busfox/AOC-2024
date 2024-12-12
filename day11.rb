@@ -25,7 +25,7 @@ class StoneSorter
     return @cache[stone_value] if @cache[stone_value]
 
     result = if stone_value == 0
-      1
+      [1]
     elsif value_digits(stone_value).even?
       size = value_digits(stone_value) / 2
       divisor = 10 ** size # 10 to the power of size
@@ -36,7 +36,7 @@ class StoneSorter
       stone_value * 2024
     end
 
-    @cache[stone_value] = result
+    @cache[stone_value] = [result].flatten
   end
 
   def value_digits(value)
