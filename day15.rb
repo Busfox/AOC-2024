@@ -360,6 +360,7 @@ class Part2 < Part1
   end
 
   def get_new_positions_and_values(start_position, step, initial: true)
+    binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
     result = nil
     original_line = new_positions_and_values_in_line(start_position, step)
     # binding.pry
@@ -378,19 +379,63 @@ class Part2 < Part1
         next if column == start_position.last
         # binding.pry
         new_positions_and_values_in_line([row, column], step, original_line: false)
-      end
+      end.compact
       # binding.pry
+      binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
 
-      done = check_if_all_boxes_are_complete(foo, original_line)
 
-      binding.pry if !done
+      completed_boxes = check_if_all_boxes_are_complete(foo, original_line)
+      done = completed_boxes[:false].empty?
+
+      result = foo.map do |line|
+        original_line.merge(line)
+      end.inject(:merge)
+      # binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
+
+      # result = result.first
 
       if done
-        result = foo.map do |line|
-          original_line.merge(line)
-        end.first
+        # binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
+
 
         return result
+      else
+        completed_boxes[:false].each do |box|
+          new_line_start = [box.first - step.first, box.last - step.last]
+
+          foo.each do |hash|
+            bar = hash.map do |coords, value|
+              check_for_box_connection(coords, step)
+            end
+
+            baz = bar.compact.group_by(&:last).map { |k,v| {k => v.map(&:first)} }
+
+            bax = baz.map do |group|
+              # binding.pry
+              column = group.keys.first
+              row = MOVEMENT_VECTORS['v'] == step ? group.values.first.min : group.values.first.max
+              next if column == start_position.last
+              # binding.pry
+              new_positions_and_values_in_line([row, column], step, original_line: false)
+            end.compact
+
+            binding.pry
+            completed_boxes = check_if_all_boxes_are_complete(bax, hash)
+            done = completed_boxes[:false].empty?
+
+            result = bax.map do |line|
+              result.merge(line)
+            end.first
+
+            if done
+
+              binding.pry
+              return result
+            else
+              # DO IT AGAIN
+            end
+          end
+        end
       end
     end
 
@@ -398,22 +443,22 @@ class Part2 < Part1
   end
 
   def check_if_all_boxes_are_complete(adjacent_lines, original_line)
-    results = []
+    results = { true: [], false: [] }
     adjacent_lines.each do |line|
       line.each do |coords, value|
         next unless BOX.include?(value)
 
         if value == ']' && (original_line[[coords.first, coords.last - 1]] == BOX.first || original_line[[coords.first, coords.last + 1]] == BOX.first)
-          results << true
+          results[:true] << coords
         elsif value == '[' && (original_line[[coords.first, coords.last - 1]] == BOX.last || original_line[[coords.first, coords.last + 1]] == BOX.last)
-          results << true
+          results[:true] << coords
         else
-          results << false
+          results[:false] << coords
         end
       end
     end
 
-    !results.include?(false)
+    results
   end
 
   def check_for_box_connection(position, step)
