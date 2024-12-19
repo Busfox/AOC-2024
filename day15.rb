@@ -122,206 +122,6 @@ class Part1
   end
 end
 
-# class Part2 < Part1
-#   WALL = '#'
-#   ROBOT = '@'
-#   BOX = ['[',']']
-#   EMPTY = '.'
-
-#   def initialize(map, movement)
-#     super
-
-#     @map = stretch_out_map
-#     @robot_position = find_robot_starting_position
-#   end
-
-#   def solve
-#     @movements.each do |movement|
-#       # binding.pry
-#       @map.each do |m|
-#         puts "#{m}"
-#       end
-
-#       step = determine_step(movement)
-#       @current_line = trace_path_to_wall(@robot_position, step)
-#       if @current_line.size > 1
-
-#         line = nil
-#         adjacent_lines = @current_line[:adjacent]
-#         @current_line[:adjacent] = []
-
-#         adjacent_lines.each do |adjacent|
-#           map_adjacent_lines([adjacent], step)
-#         end
-#       end
-
-#       next if @current_line[:standard].empty? || !valid_positions_in_line?(@current_line[:standard]) || (!@current_line[:adjacent].nil? && @current_line[:adjacent].all? { |line| !valid_positions_in_line?(line) })
-
-#       move_robot_to_next_position(step)
-#     end
-
-#     binding.pry
-
-#     calculate_box_coordinates_sum
-#   end
-
-#   def map_adjacent_lines(adjacent, step)
-#     previous_adjacent = nil
-
-#     loop do |i|
-#       break if adjacent.nil? || !previous_adjacent.nil? && (adjacent.first.first - previous_adjacent.first.first).abs > 1
-
-#       line = trace_path_to_wall(adjacent.first, step)
-#       previous_adjacent = adjacent
-#       adjacent = line[:adjacent]
-#       @current_line[:adjacent] << line[:standard]
-#     end
-#   end
-
-#   # Updates the map with new robot positions and clears the previous position.
-#   def update_positions(positions, max, robot_should_move: true)
-#     # binding.pry if !max.nil?
-#     positions.reverse.each_cons(2) do |to, from|
-#       puts "#{max}"
-#       # binding.pry if max == {"up"=>[2]}
-#       # if !max.nil? && !max['down'].nil? && max['down'] < to.first || !max.nil? && !max['up'].nil? && max['up'] > to.first
-#       #   binding.pry
-#       #   next
-#       # end
-#       @map[to.first][to.last] = @map[from.first][from.last]
-#     end
-
-#     @map[positions.first.first][positions.first.last] = EMPTY
-#     @robot_position = positions[1] if robot_should_move
-#   end
-
-#   # Traces the path until hitting a wall and returns the path.
-#   def trace_path_to_wall(start_position, step)
-#     binding.pry if start_position == [7,10]
-#     path = { standard: [] }
-#     current_position = start_position
-
-#     loop do
-#       # binding.pry
-#       next_position = add_positions(current_position, step)
-#       # binding.pry if next_position == [2, 5]
-
-#       break if path[:standard].size == 1 && value_at(path[:standard].first) == EMPTY
-
-#       if step.first != 0 && box?(next_position)
-#         path[:adjacent] = [] unless path[:adjacent]
-#         if value_at(next_position) == BOX.first # left side of box
-#           path[:adjacent] << [next_position.first, next_position.last + 1]
-#           path[:adjacent] << [next_position.first, next_position.last + 2] if value_at([next_position.first, next_position.last + 2]) == EMPTY
-#         elsif value_at(next_position) == BOX.last # right side of box
-#           path[:adjacent] << [next_position.first, next_position.last - 1]
-#           path[:adjacent] << [next_position.first, next_position.last - 2] if value_at([next_position.first, next_position.last - 2]) == EMPTY
-#         end
-#       end
-#       break if wall?(next_position)
-
-#       path[:standard] << next_position
-#       current_position = next_position
-#     end
-
-#     path
-#   end
-
-#   def move_robot_to_next_position(step)
-#     positions_to_move = @current_line[:standard].take_while do |coordinate|
-#       @map[coordinate.first][coordinate.last] != EMPTY
-#     end
-
-#     max = if step == MOVEMENT_VECTORS['^'] && @current_line[:adjacent]
-#       to_add = @current_line[:adjacent].any?(&:empty?) ? 1 : 0
-
-#       foo = @current_line[:adjacent].delete_if { |elem| elem.flatten.empty? }.map { |x| x.map(&:first) }
-#       binding.pry if @current_line[:adjacent].delete_if { |elem| elem.flatten.empty? }.map { |x| x.map(&:first) }.reduce(:&).first.nil?
-
-#       { 'up' => @current_line[:adjacent].delete_if { |elem| elem.flatten.empty? }.map { |x| x.map(&:first) }.reduce(:&).first + to_add }
-#     elsif step == MOVEMENT_VECTORS['v'] && @current_line[:adjacent]
-#       to_sub = @current_line[:adjacent].any?(&:empty?) ? 1 : 0
-#       binding.pry if @current_line[:adjacent].delete_if { |elem| elem.flatten.empty? }.map { |x| x.map(&:first) }.reduce(:&).first.nil?
-
-#       foo = @current_line[:adjacent].delete_if { |elem| elem.flatten.empty? }.map { |x| x.map(&:first) }
-#       foo.pop unless foo.map(&:first).each_cons(2).all? {|a, b| b == a + 1 }
-#       { 'down' => foo.reduce(:&).first - to_sub }
-#     end
-
-#     adjacent_positions_to_move = @current_line[:adjacent].map do |line|
-#       # binding.pry
-#       positions = line.take_while { |coords| @map[coords.first][coords.last] != EMPTY }
-#       first_empty = line.find { |coord| @map[coord.first][coord.last] == EMPTY }
-#       positions << first_empty if first_empty
-#       positions.insert(0, [positions.first.first - step.first, positions.first.last]) if first_empty
-#     end.compact if @current_line[:adjacent]
-
-#     positions_to_move << @current_line[:standard].find { |coord| @map[coord.first][coord.last] == EMPTY }
-#     positions_to_move.compact!
-#     positions_to_move.unshift(@robot_position)
-
-#     # binding.pry if !max.nil?
-
-#     return if !max.nil? && max['down'].nil? && adjacent_positions_to_move && ([positions_to_move] + adjacent_positions_to_move).flatten(1).map(&:first).any? {|x| x < max['up'] } ||
-#     !max.nil? && max['up'].nil? && adjacent_positions_to_move && ([positions_to_move] + adjacent_positions_to_move).flatten(1).map(&:first).any? {|x| x > max['down'] }
-
-#     update_positions(positions_to_move, max)
-#     return unless adjacent_positions_to_move
-#     adjacent_positions_to_move.each do |line|
-#       update_positions(line, max, robot_should_move: false)
-#     end
-#   end
-
-#   # Checks if there are valid positions to move to in the current line.
-#   def valid_positions_in_line?(line)
-#     line.any? { |coords| @map[coords.first][coords.last] == EMPTY }
-#   end
-
-#   def stretch_out_map
-#     new_map = []
-
-#     @map.each_with_index do |line, row_index|
-#       new_line = []
-
-#       line.each_with_index do |char, column_index|
-#         case char
-#         when '#'
-#           new_line << '#'
-#           new_line << '#'
-#         when 'O'
-#           new_line << '['
-#           new_line << ']'
-#         when '.'
-#           new_line << '.'
-#           new_line << '.'
-#         when '@'
-#           new_line << '@'
-#           new_line << '.'
-#         else
-#           binding.pry
-#         end
-#       end
-
-#       new_map << new_line
-#     end
-
-#     new_map
-#   end
-
-#   def calculate_box_coordinates_sum
-#     @map.each_with_index.sum do |row, row_index|
-#       row.each_with_index.sum do |char, column_index|
-#         char == BOX.first ? (row_index * 100 + column_index) : 0
-#       end
-#     end
-#   end
-
-#   def box?(position)
-#     BOX.include?(value_at(position))
-#   end
-# end
-
-
 class Part2 < Part1
   WALL = '#'
   ROBOT = '@'
@@ -333,12 +133,14 @@ class Part2 < Part1
 
     @map = stretch_out_map
     @robot_position = find_robot_starting_position
+    @mapped_columns = []
+    @mapped_coords = []
   end
 
   def solve
     @movements.each do |movement|
       print_map
-
+      # sleep(0.1)
       step = determine_step(movement)
 
       can_move = can_move?(@robot_position, step)
@@ -350,6 +152,15 @@ class Part2 < Part1
 
     print_map
 
+    calculate_box_coordinates_sum
+  end
+
+  def calculate_box_coordinates_sum
+    @map.each_with_index.sum do |row, row_index|
+      row.each_with_index.sum do |char, column_index|
+        char == '[' ? (row_index * 100 + column_index) : 0
+      end
+    end
   end
 
   def print_map
@@ -360,101 +171,89 @@ class Part2 < Part1
   end
 
   def get_new_positions_and_values(start_position, step, initial: true)
-    binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
-    result = nil
+    if initial
+      @mapped_columns = []
+      @mapped_coords = []
+    end
+    # Compute the original line
+
     original_line = new_positions_and_values_in_line(start_position, step)
-    # binding.pry
+    @mapped_columns << start_position.last
+    @mapped_coords += original_line.keys
+    # Base case: Return if the line is horizontal or vertical with 2 or fewer elements
+    return original_line if (moving_vertically?(step) && original_line.size <= 2) || !moving_vertically?(step)
 
-    if moving_vertically?(step) && original_line.size > 2
-      adjacent_boxes = original_line.map do |coords, value|
-        check_for_box_connection(coords, step)
-      end
+    # Find adjacent boxes and group them by column
+    adjacent_boxes = original_line.map { |coords, _| check_for_box_connection(coords, step) }.compact
 
-      adjacent_boxes_grouped_by_column = adjacent_boxes.compact.group_by(&:last).map { |k,v| {k => v.map(&:first)} }
+    grouped_by_column = adjacent_boxes.group_by(&:last).transform_values { |v| v.map(&:first) }
 
-      foo = adjacent_boxes_grouped_by_column.map do |group|
-        # binding.pry
-        column = group.keys.first
-        row = MOVEMENT_VECTORS['v'] == step ? group.values.first.min : group.values.first.max
-        next if column == start_position.last
-        # binding.pry
-        new_positions_and_values_in_line([row, column], step, original_line: false)
-      end.compact
-      # binding.pry
-      binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
+    # Return if we are about to recursively process already processed groups. This avoids an infinite loop
+    if !initial
+      already_mapped_columns = grouped_by_column.keys & @mapped_columns
 
-
-      completed_boxes = check_if_all_boxes_are_complete(foo, original_line)
-      done = completed_boxes[:false].empty?
-
-      result = foo.map do |line|
-        original_line.merge(line)
-      end.inject(:merge)
-      # binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
-
-      # result = result.first
-
-      if done
-        # binding.pry if MOVEMENT_VECTORS['v'] == step && start_position == [5,7]
-
-
-        return result
-      else
-        completed_boxes[:false].each do |box|
-          new_line_start = [box.first - step.first, box.last - step.last]
-
-          foo.each do |hash|
-            bar = hash.map do |coords, value|
-              check_for_box_connection(coords, step)
-            end
-
-            baz = bar.compact.group_by(&:last).map { |k,v| {k => v.map(&:first)} }
-
-            bax = baz.map do |group|
-              # binding.pry
-              column = group.keys.first
-              row = MOVEMENT_VECTORS['v'] == step ? group.values.first.min : group.values.first.max
-              next if column == start_position.last
-              # binding.pry
-              new_positions_and_values_in_line([row, column], step, original_line: false)
-            end.compact
-
-            binding.pry
-            completed_boxes = check_if_all_boxes_are_complete(bax, hash)
-            done = completed_boxes[:false].empty?
-
-            result = bax.map do |line|
-              result.merge(line)
-            end.first
-
-            if done
-
-              binding.pry
-              return result
-            else
-              # DO IT AGAIN
-            end
-          end
+      already_mapped_columns.each do |column|
+        @mapped_coords.each do |coords|
+          # binding.pry if @robot_position == [13,40]
+          grouped_by_column[column].delete(coords.first) if coords.last == column
         end
+        grouped_by_column.delete(column) if grouped_by_column[column].empty?
       end
+
+      return original_line if grouped_by_column.empty?
     end
 
-    original_line
+    # Recursively process each group
+    new_lines = grouped_by_column.flat_map do |column, rows|
+      row = MOVEMENT_VECTORS['v'] == step ? rows.min : rows.max
+      next if column == start_position.last
+
+      # Recursively get new positions and values for this line
+      line = get_new_positions_and_values([row, column], step, initial: false)
+
+      line
+    end.compact
+
+    # Combine all lines
+    merged_lines = new_lines.inject(original_line) { |result, line| result.merge(line) }
+
+    # if initial && !check_if_all_boxes_are_complete2(@mapped_coords, merged_lines)[:false].empty? && completed_boxes[:false].empty?
+      completed_boxes = check_if_all_boxes_are_complete(@mapped_coords, merged_lines)
+      # binding.pry if @robot_position == [25,29]
+    # end
+
+    return merged_lines if completed_boxes[:false].empty?
+
+    # Recursively process incomplete boxes
+    while !completed_boxes[:false].empty?
+      completed_boxes[:false].each do |box|
+        new_start_position = if merged_lines[box] == ']'
+          [box.first - step.first, box.last - 1]
+        elsif merged_lines[box] == '['
+          [box.first - step.first, box.last + 1]
+        end
+
+        merged_lines = get_new_positions_and_values(new_start_position, step, initial: false).merge(merged_lines)
+      end
+
+      completed_boxes = check_if_all_boxes_are_complete(@mapped_coords, merged_lines)
+    end
+
+    merged_lines
   end
 
-  def check_if_all_boxes_are_complete(adjacent_lines, original_line)
+  def check_if_all_boxes_are_complete(mapped_coords, coords_to_move)
     results = { true: [], false: [] }
-    adjacent_lines.each do |line|
-      line.each do |coords, value|
-        next unless BOX.include?(value)
 
-        if value == ']' && (original_line[[coords.first, coords.last - 1]] == BOX.first || original_line[[coords.first, coords.last + 1]] == BOX.first)
-          results[:true] << coords
-        elsif value == '[' && (original_line[[coords.first, coords.last - 1]] == BOX.last || original_line[[coords.first, coords.last + 1]] == BOX.last)
-          results[:true] << coords
-        else
-          results[:false] << coords
-        end
+    coords_to_move.each do |coord, value|
+      next unless BOX.include?(value)
+
+      if value == ']' && mapped_coords.include?([coord.first, coord.last - 1])
+        results[:true] << coord
+      elsif value == '[' && mapped_coords.include?([coord.first, coord.last + 1])
+        results[:true] << coord
+      else
+        results[:false] << coord
       end
     end
 
@@ -569,8 +368,8 @@ class Part2 < Part1
   end
 end
 
-# part1 = Part1.new(map, movements)
-# puts part1.solve
+part1 = Part1.new(map, movements)
+puts part1.solve
 
 part2 = Part2.new(map, movements)
 puts part2.solve
