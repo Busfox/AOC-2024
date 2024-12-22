@@ -46,18 +46,17 @@ class Part1
     @end_position = find_coordinates_by_value('E')
     @paths = []
     @traversal_queue = []
+    @visited_coords = Hash.new(1000000000)
   end
 
   def solve
-    unsolved = true
     depth_first_search
 
-    while unsolved do
-      unsolved = depth_first_search(@traversal_queue.first)
+    while !@traversal_queue.empty? do
+      depth_first_search(@traversal_queue.first)
     end
 
     possible_paths = paths.select(&:solved?)
-
     possible_paths.map(&:calculate_score).min
   end
 
@@ -77,13 +76,14 @@ class Part1
     current_facing = current_path.facing
     current_turns = current_path.turns
     current_path_steps = current_path.path.map(&:dup)
-
     position = @traversal_queue.first.path.last
     possible_next_steps = find_possible_next_steps(position)
-
     possible_next_steps.reject! { |coords| current_path.path.include?(coords) }
 
-    @paths << @traversal_queue.shift if possible_next_steps.empty?
+    if possible_next_steps.empty?
+      @paths << @traversal_queue.shift
+      return
+    end
 
     possible_next_steps.each_with_index do |coords, index|
       path = if index.zero?
@@ -100,12 +100,18 @@ class Part1
       path.path << coords
 
       if end?(coords)
-        @paths << @traversal_queue.shift
+        @paths << @traversal_queue.shift if index.zero?
       end
     end
 
-    return false if @traversal_queue.empty?
-    true
+    score = current_path.calculate_score
+
+    if score > @visited_coords[position]
+      @traversal_queue.shift
+      return
+    end
+
+    @visited_coords[position] = score
   end
 
   def find_possible_next_steps(position)
@@ -136,7 +142,6 @@ class Part1
     vector = coord_math(new_position, current_position, :-)
     new_facing = MOVEMENT_VECTORS.key(vector)
     if coord_math(MOVEMENT_VECTORS[path.facing], MOVEMENT_VECTORS[new_facing]) == [0, 0]
-      binding.pry
       path.turns += 2
     elsif coord_math(MOVEMENT_VECTORS[path.facing], MOVEMENT_VECTORS[new_facing]).map(&:abs) == [1, 1]
       path.turns +=1
@@ -155,6 +160,17 @@ class Part1
   end
 end
 
+class Part2 < Part1
+  def solve
+    min_score = super
+    shortest_paths = paths.select { |path| path.solved? && path.calculate_score == min_score }
+    shortest_path_positions = shortest_paths.map(&:path).flatten(1).uniq
+
+    shortest_path_positions.size
+  end
+end
 part1 = Part1.new(input)
 puts part1.solve
-binding.pry
+
+part2 = Part2.new(input)
+puts part2.solve
